@@ -1,0 +1,40 @@
+
+# This part defines a Calculated Table Expression for identifying the daily vaccination, Null countries.
+
+WITH nan_countries AS (nan_countries
+    SELECT country
+    FROM country_vaccination_stats
+    GROUP BY country
+    HAVING COUNT(*) = SUM(CASE WHEN daily_vaccinations IS NULL THEN 1 ELSE 0 END)
+)
+
+# This part updates those countries' Nan Values with zero.
+
+UPDATE country_vaccination_stats
+SET daily_vaccinations = 0
+WHERE country IN (SELECT country FROM nan_countries) AND daily_vaccinations IS NULL;
+
+# This part defines a TEMPORARY TABLE named as country_medians so we use these values for updating our main table's NaN values.
+
+CREATE TEMPORARY TABLE country_medians AS
+SELECT 
+    country,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY daily_vaccinations) AS median_daily_vaccinations
+FROM 
+    country_vaccination_stats
+GROUP BY 
+    country;
+
+# This part updates the main table with the median values from our temporary table
+
+UPDATE country_vaccination_stats
+SET daily_vaccinations = (
+    SELECT median_daily_vaccinations
+    FROM country_medians
+    WHERE country_vaccination_stats.country = country_medians.country
+)
+WHERE daily_vaccinations IS NULL;
+
+# Last check-ups
+DROP TABLE country_medians;
+SELECT * FROM country_vaccination_stats;

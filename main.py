@@ -29,3 +29,17 @@ df2.sort_values(by='country',ascending=True,inplace=True)
 df2.to_csv('output.csv')
 
 print(df2)
+
+# Sum of vaccinations by date
+date_finder = df2.groupby('date')['daily_vaccinations']
+date_sums = date_finder.sum()
+print(date_sums)
+
+# Top Three Countries with the most Vaccinations Median
+
+country_medians = df2.groupby('country')['daily_vaccinations'].median()
+country_medians_df = pd.DataFrame(country_medians)
+country_medians_df.sort_values(by = 'daily_vaccinations',ascending = False, inplace= True)
+print(country_medians_df.head(3))
+
+
